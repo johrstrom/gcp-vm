@@ -1,0 +1,27 @@
+
+disk_size: 25
+machine_type: "n1-standard-1"
+
+# instance_name: must-specify
+centos_7_vm: "projects/centos-cloud/global/images/family/centos-7"
+vm_image: "{{ centos_7_vm }}"
+gcp_region: "us-east1"
+gcp_zone: "b"
+
+region_zone: "{{ gcp_region }}-{{ gcp_zone }}"
+
+disk_name: "{{ instance_name }}-disk"
+#network_name: "{{ instance_name }}-network"
+network_name: "default"
+address_name: "{{ instance_name }}-address"
+internet_firewall: "{{ instance_name }}-firewall"
+intranet_firewall: "ood-k8s-firewall"
+ood_nfs_name: ood_home_nfs
+
+vm_labels:
+  environment: dev
+  app: ood
+
+vm_metadata:
+  enable-guest-attributes: true 
+  ssh-keys: jeffo_ci:ssh-rsa cipubkey jeffo_ci@localhost.localdomain

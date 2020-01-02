@@ -1,0 +1,66 @@
+- name: find the instance
+  gcp_compute_instance_info:
+    auth_kind: "serviceaccount"
+    zone: "{{ region_zone }}"
+    project: "{{ gcp_project }}"
+    service_account_file: "{{ service_account_file }}"
+    filters:
+    - "name = {{ instance_name }}"
+  register: instance_info
+
+- set_fact:
+    vm_ip: "{{ instance_info | json_query('networkInterfaces[0].accessConfigs[0].natIP') }}"
+
+- name: destroy the instance
+  gcp_compute_instance:
+    name: "{{ instance_name }}"
+    state: absent
+    project: "{{ gcp_project }}"
+    zone: "{{ region_zone }}"
+  register: vm_info
+
+- name: destroy the address
+  gcp_compute_address:
+    name: "{{ address_name }}"
+    project: "{{ gcp_project }}"
+    region: "{{ gcp_region }}"
+    state: absent
+
+- name: destroy the firewalls
+  gcp_compute_firewall:
+    name: "{{ item }}"
+    project: "{{ gcp_project }}"
+    state: absent
+  loop:
+  - "{{ internet_firewall }}"
+    
+- name: find the zone
+  gcp_dns_managed_zone:
+      name: "{{ dns_zone_name }}"
+      dns_name: "{{ dns_zone }}."
+      description: "{{ dns_zone_description }}"
+      state: present
+      project: "{{ gcp_project }}"
+  register: managed_zone
+
+- name: delete dns record
+  gcp_dns_resource_record_set:
+    name: "{{ servername }}."
+    managed_zone: "{{ managed_zone }}"
+    type: A
+    ttl: 600
+    target: 
+    - "{{ vm_ip }}"
+    project: "{{ gcp_project }}"
+    state: absent
+
+# # can't really seem to destroy the network! So be it, I don't think
+# # it costs anything
+# - name: destroy the network
+#   gcp_compute_network:
+#     name: "{{ network_name }}"
+#     project: "{{ gcp_project }}"
+#     auth_kind: "serviceaccount"
+#     service_account_file: "{{ service_account_file }}"
+#     state: absent
+
